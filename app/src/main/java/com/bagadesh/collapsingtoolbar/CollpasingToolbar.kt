@@ -135,7 +135,7 @@ fun ShowTabsUI(
                 modifier = Modifier
                     .height(50.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .clickable {
+                    .noRippleClickable {
                         onTabClick(index)
                     }
                     .zIndex(1f),
@@ -157,13 +157,13 @@ fun TabBarItem(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        //val targetColor by pagerState.provideColorChange(index = index, surfaceColor = colors.surface, onSurfaceColor = colors.onSurface)
+        val targetColor by pagerState.provideColorChange(index = index, surfaceColor = colors.surface, onSurfaceColor = colors.onSurface)
         // val color by animateColorAsState(targetValue = targetColor, animationSpec = tween(durationMillis = 500))
-
-        val targetColor = when(index == pagerState.currentPage) {
-            false -> colors.surface
-            true -> colors.onSurface
-        }
+//
+//        val targetColor = when(index == pagerState.currentPage) {
+//            false -> colors.surface
+//            true -> colors.onSurface
+//        }
 
         Text(
             text = data.title,
@@ -188,15 +188,10 @@ fun PagerState.provideColorChange(
          *      -> update current to onSurfaceColor to surfaceColor while value from 0 -> 0.5
          */
 
-        val offset = currentPageOffset.absoluteValue
-
-        when (index == currentPage) {
-            true -> onSurfaceColor
-            false -> {
-                if (index == targetPage) {
-                    lerp(surfaceColor, onSurfaceColor, offset * 2)
-                } else surfaceColor
-            }
+        when (index) {
+            currentPage -> onSurfaceColor
+            targetPage -> lerp(surfaceColor, onSurfaceColor, currentPageOffset.absoluteValue * 2)
+            else -> surfaceColor
         }
     }
 }
