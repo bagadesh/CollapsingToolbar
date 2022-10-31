@@ -2,9 +2,9 @@
 
 package com.bagadesh.collapsingtoolbar
 
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,12 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -31,15 +26,15 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.bagadesh.collapsingtoolbar.custom.customPagerTabIndicatorOffset
-import com.bagadesh.collapsingtoolbar.custom.listOfBlendModes
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerState
 import com.google.accompanist.pager.rememberPagerState
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import kotlin.math.max
+import androidx.compose.ui.graphics.lerp
+import kotlinx.coroutines.delay
 
 
 @Composable
@@ -76,10 +71,13 @@ fun CollapsingToolbar() {
             tabResults = tabResults,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp)
+                .height(70.dp)
         ) {
             scope.launch {
-                pagerState.animateScrollToPage(it)
+                pagerState.animateScrollToPage(
+                    page = it,
+                    pageOffset = 0f,
+                )
             }
         }
         HorizontalPager(state = pagerState, count = tabResults.size) {
@@ -135,7 +133,8 @@ fun ShowTabsUI(
             TabBarItem(
                 pagerState = pagerState,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
+                    .height(50.dp)
+                    .clip(RoundedCornerShape(20.dp))
                     .clickable {
                         onTabClick(index)
                     }
@@ -154,70 +153,50 @@ fun TabBarItem(
     data: TabData,
     pagerState: PagerState
 ) {
-    key(data) {
-        Box(
-            modifier = modifier,
-            contentAlignment = Alignment.Center
-        ) {
-            val targetColor by derivedStateOf {
-                val targetDistance by derivedStateOf {
-                    (pagerState.targetPage - pagerState.currentPage).absoluteValue
-                }
-                val fraction by derivedStateOf {
-                    (pagerState.currentPageOffset / max(targetDistance, 1)).absoluteValue
-                }
-                when {
-                    index == pagerState.targetPage && fraction > 0.2f -> {
-                        Color.Black
-                    }
-                    index == pagerState.currentPage && fraction > 0.5f -> {
-                        Color.White
-                    }
-                    else -> {
-                        when (index == pagerState.currentPage) {
-                            false -> Color.White
-                            true -> Color.Black
-                        }
-                    }
-                }
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        //val targetColor by pagerState.provideColorChange(index = index, surfaceColor = colors.surface, onSurfaceColor = colors.onSurface)
+        // val color by animateColorAsState(targetValue = targetColor, animationSpec = tween(durationMillis = 500))
+
+        val targetColor = when(index == pagerState.currentPage) {
+            false -> colors.surface
+            true -> colors.onSurface
+        }
+
+        Text(
+            text = data.title,
+            color = targetColor,
+            modifier = Modifier,
+        )
+    }
+}
+
+
+fun PagerState.provideColorChange(
+    index: Int,
+    surfaceColor: Color,
+    onSurfaceColor: Color
+): State<Color> {
+    return derivedStateOf {
+
+        /**
+         * Steps:
+         * 1. Offset from 0 to 0.5 while index == targetIndex
+         *      -> update target to surfaceColor to onSurfaceColor while value from 0 -> 0.5
+         *      -> update current to onSurfaceColor to surfaceColor while value from 0 -> 0.5
+         */
+
+        val offset = currentPageOffset.absoluteValue
+
+        when (index == currentPage) {
+            true -> onSurfaceColor
+            false -> {
+                if (index == targetPage) {
+                    lerp(surfaceColor, onSurfaceColor, offset * 2)
+                } else surfaceColor
             }
-            val color by animateColorAsState(targetValue = targetColor, animationSpec = tween(durationMillis = 500))
-//            var blendMode by remember {
-//                mutableStateOf(listOfBlendModes.first())
-//            }
-//            LaunchedEffect(key1 = Unit) {
-//                var index = 0
-//                repeat(1000) {
-//                    delay(1000)
-//                    if (listOfBlendModes.size >= index - 1) {
-//                        blendMode = listOfBlendModes[++index]
-//                        println("datmug, $blendMode")
-//                    }
-//                }
-//            }
-            var onDraw: DrawScope.() -> Unit by remember { mutableStateOf({}) }
-            Text(
-                text = data.title,
-                color = Color.Black,
-                modifier = Modifier.drawBehind {
-                    onDraw()
-                },
-                onTextLayout = {
-                    onDraw = {
-                        drawRect(
-                            color = color,
-                            size = size
-                        )
-                    }
-                }
-            )
-//            Canvas(
-//                modifier = Modifier
-//                    .padding(10.dp)
-//                    .size(10.dp, 10.dp)
-//            ) {
-//                this.drawContext.canvas
-//            }
         }
     }
 }

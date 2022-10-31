@@ -58,11 +58,11 @@ fun Modifier.customPagerTabIndicatorOffset(
     }
 
     fillMaxWidth()
-        .wrapContentSize(Alignment.BottomStart)
+        .wrapContentSize(Alignment.CenterStart)
         .offset {
             IntOffset(y = 0, x = targetIndicatorOffset.roundToPx())
         }
-        .height(28.dp)
+        .height(42.dp)
         .width(indicatorWidth)
         .clip(RoundedCornerShape(20.dp))
         .background(Color.White)
